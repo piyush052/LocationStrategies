@@ -5,17 +5,15 @@ import android.content.Context
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
-import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
     private var context: Context? = null
 
-    var locationManager: LocationManager?= null
+    var locationManager: LocationManager? = null
     @SuppressLint("MissingPermission")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,23 +21,9 @@ class MainActivity : AppCompatActivity() {
         context = this
 
         // Acquire a reference to the system Location Manager
-         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
 
-        // Define a listener that responds to location updates
-
-
-        // Register the listener with the Location Manager to receive location updates
-        //locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
-        locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
-       // locationManager.requestLocationUpdates(LocationManager.PASSIVE_PROVIDER, 0, 0f, locationListener)
-
-
-        textView.setOnClickListener(object :View.OnClickListener{
-            override fun onClick(v: View?) {
-                Toast.makeText(context, "---------",Toast.LENGTH_LONG).show()
-            }
-
-        })
 
     }
 
@@ -52,18 +36,21 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
-                textView.text = "onStatusChanged  -- ${provider}, ${status}"
+                textView.append( "\nonStatusChanged  -- ${provider}, ${status}")
 
             }
 
+            @SuppressLint("MissingPermission")
             override fun onProviderEnabled(provider: String) {
-                textView.text = "onProviderEnabled  -- ${provider}"
+                textView.append("\nonProviderEnabled  -- ${provider}")
+              //  locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
+
             }
 
             @SuppressLint("MissingPermission")
             override fun onProviderDisabled(provider: String) {
-                textView.text = "onProviderDisabled  -- ${provider}"
-                locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
+               textView.append( "\nonProviderDisabled  -- ${provider}")
+              //  locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
 
 
             }
@@ -77,6 +64,6 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun makeUseOfNewLocation(location: Location) {
-        textView.text = "Location  -- ${location.latitude}, ${location.longitude}"
+        textView.append("\nLocation  -- ${location.latitude}, ${location.longitude}")
     }
 }
