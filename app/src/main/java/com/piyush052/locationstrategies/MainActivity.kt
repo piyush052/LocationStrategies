@@ -20,6 +20,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         context = this
 
+        //val uuid = Generators.timeBasedGenerator().generate()
+
         // Acquire a reference to the system Location Manager
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
@@ -27,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    val locationListener: LocationListener
+    private val locationListener: LocationListener
         get() = object : LocationListener {
 
             override fun onLocationChanged(location: Location) {
@@ -54,6 +56,7 @@ class MainActivity : AppCompatActivity() {
 
 
             }
+
         }
 
 
