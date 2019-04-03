@@ -2,6 +2,7 @@ package com.piyush052.locationstrategies
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -15,17 +16,47 @@ import kotlinx.android.synthetic.main.activity_main.*
 import android.widget.Toast
 import android.content.DialogInterface
 import androidx.appcompat.app.AlertDialog
+import android.content.IntentSender
+import android.service.carrier.CarrierMessagingService.ResultCallback
+import android.content.BroadcastReceiver.PendingResult
+import android.content.Intent
+import android.os.Build
+import android.util.Log
+import androidx.annotation.RequiresApi
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.api.GoogleApiClient
+import com.google.android.gms.location.*
+import com.google.android.gms.location.LocationSettingsStatusCodes
+import com.google.android.gms.location.LocationSettingsStates
+import com.google.android.gms.location.places.ui.PlaceAutocomplete.getStatus
 
-class MainActivity : AppCompatActivity() {
+
+class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
+    GoogleApiClient.OnConnectionFailedListener {
+    override fun onConnectionFailed(p0: ConnectionResult) {
+        toast("Failed")
+    }
+
+    override fun onConnected(p0: Bundle?) {
+        startListeningLocation()
+    }
+
+    override fun onConnectionSuspended(p0: Int) {
+        toast("Suspended");
+    }
 
     private lateinit var context: Context
-    private  var currentLocation: Location? = null
+    var googleApiClient: Any? = null
+    private var currentLocation: Location? = null
 
     private val _PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 101
-    private  val TWO_MINUTES: Long = 1000 * 60 * 2
+    private val TWO_MINUTES: Long = 1000 * 60 * 2
+
+    private val PROVIDER = LocationManager.GPS_PROVIDER
 
 
     var locationManager: LocationManager? = null
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -34,15 +65,81 @@ class MainActivity : AppCompatActivity() {
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         checkPermission()
+        clear.setOnClickListener { textView.text = "Everything is cleared\n" }
 
 
     }
 
     @SuppressLint("MissingPermission")
     fun startListeningLocation() {
-        locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 3000, 0f, locationListener)
+        locationManager!!.requestLocationUpdates(PROVIDER, 0, 0f, locationListener)
+        val location = getLocation(PROVIDER)
+        if (location is Location)
+            makeUseOfNewLocation(location)
     }
 
+    fun turnONGps() {
+        if (googleApiClient == null) {
+            googleApiClient = GoogleApiClient.Builder(this)
+                .addApi(LocationServices.API).addConnectionCallbacks(this@MainActivity)
+                .addOnConnectionFailedListener(this@MainActivity).build()
+            (googleApiClient as GoogleApiClient?)!!.connect()
+            val locationRequest = LocationRequest.create()
+            locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY;
+            locationRequest.interval = 30 * 1000
+            locationRequest.fastestInterval = 5 * 1000
+            val builder = LocationSettingsRequest.Builder()
+                .addLocationRequest(locationRequest)
+
+            // **************************
+            builder.setAlwaysShow(true) // this is the key ingredient
+            // **************************
+
+            val result = LocationServices.SettingsApi.checkLocationSettings(googleApiClient as GoogleApiClient?, builder.build())
+            result.setResultCallback {
+                (ResultCallback<LocationSettingsResult> { result ->
+                    val status = result.status
+                    val state = result.locationSettingsStates
+                    when (status.statusCode) {
+                        LocationSettingsStatusCodes.SUCCESS -> toast("Success")
+                        LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
+                            toast("GPS is not on")
+                            // Location settings are not satisfied. But could be
+                            // fixed by showing the user
+                            // a dialog.
+                            try {
+                                // Show the dialog by calling
+                                // startResolutionForResult(),
+                                // and check the result in onActivityResult().
+                                status.startResolutionForResult(this@MainActivity, 1000)
+
+                            } catch (e: IntentSender.SendIntentException) {
+                                // Ignore the error.
+                                Log.e("IntentSender.SendIntentException",e.message)
+                            }
+
+                        }
+                        LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
+                    }
+                })
+            }
+        }
+    }
+
+    fun toast(abs: String) {
+        Toast.makeText(this@MainActivity, abs, Toast.LENGTH_LONG).show()
+    }
+
+
+    @SuppressLint("MissingPermission")
+    fun getLocation(provider: String): Location? {
+        if (locationManager!!.isProviderEnabled(provider)) {
+            if (locationManager != null) {
+                return locationManager!!.getLastKnownLocation(provider)
+            }
+        }
+        return null
+    }
 
     private fun showRationaleDialog() {
         AlertDialog.Builder(this)
@@ -111,11 +208,7 @@ class MainActivity : AppCompatActivity() {
                             Manifest.permission.ACCESS_FINE_LOCATION
                         )
                     ) {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "Please provide the permission ",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        toast("Please provide the permission ")
                     } else {
                         showRationaleDialog()
                     }
@@ -139,19 +232,23 @@ class MainActivity : AppCompatActivity() {
 
         override fun onProviderEnabled(provider: String) {
             textView.append("\nonProviderEnabled  -- ${provider}")
-            //  locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
 
         }
 
         override fun onProviderDisabled(provider: String) {
             textView.append("\nonProviderDisabled  -- ${provider}")
-            //  locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0f, locationListener)
+            //turnONGps()
 
 
         }
 
     }
 
+    override fun onResume() {
+        super.onResume()
+        turnONGps()
+
+    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -161,18 +258,17 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private fun makeUseOfNewLocation(location: Location) {
 
-        textView.append("\nLocation  -- ${location.latitude}, ${location.longitude}  ")
-        if(currentLocation==null){
+        textView.append("\nLocation -- ${location.latitude}, ${location.longitude}  ${location.accuracy}")
+        if (currentLocation == null) {
             currentLocation = location
-            textView.append(isBetterLocation(location,null).toString())
+            textView.append(isBetterLocation(location, null).toString())
 
-        }else{
+        } else {
             textView.append(isBetterLocation(currentLocation as Location, location).toString())
         }
 
         currentLocation = location
     }
-
 
 
     /** Determines whether one Location reading is better than the current Location fix
@@ -188,7 +284,7 @@ class MainActivity : AppCompatActivity() {
         // Check whether the new location fix is newer or older
         val timeDelta: Long = location.time - currentBestLocation.time
         val isSignificantlyNewer: Boolean = timeDelta > TWO_MINUTES
-        val isSignificantlyOlder:Boolean = timeDelta < -TWO_MINUTES
+        val isSignificantlyOlder: Boolean = timeDelta < -TWO_MINUTES
 
         when {
             // If it's been more than two minutes since the current location, use the new location
@@ -214,6 +310,20 @@ class MainActivity : AppCompatActivity() {
             isNewer && !isLessAccurate -> true
             isNewer && !isSignificantlyLessAccurate && isFromSameProvider -> true
             else -> false
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 1000) {
+            if (resultCode == Activity.RESULT_OK) {
+                var result = data!!.getStringExtra("result")
+                startListeningLocation()
+
+            }
+            if (resultCode == Activity.RESULT_CANCELED) {
+                //Write your code if there's no result
+            }
         }
     }
 }
