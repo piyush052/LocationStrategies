@@ -33,4 +33,13 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0-alpha02'
 
     implementation 'com.google.android.gms:play-services:12.0.1'
+
+    compile "com.squareup.okhttp3:okhttp:3.10.0"
+    compile "com.squareup.okhttp3:logging-interceptor:3.10.0"
+
+    compile ("com.squareup.retrofit2:retrofit:2.3.0"){
+        // exclude Retrofit’s OkHttp peer-dependency module and define your own module import
+        exclude module: 'okhttp'
+    }
+    compile "com.squareup.retrofit2:converter-gson:2.3.0"
 }
