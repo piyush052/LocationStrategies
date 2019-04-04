@@ -80,8 +80,9 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
         if (location is Location)
             makeUseOfNewLocation(location)
     }
-
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     fun turnONGps() {
+        googleApiClient = null
         if (googleApiClient == null) {
             googleApiClient = GoogleApiClient.Builder(this)
                 .addApi(LocationServices.API).addConnectionCallbacks(this@MainActivity)
@@ -100,8 +101,10 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
             val result =
                 LocationServices.SettingsApi.checkLocationSettings(googleApiClient as GoogleApiClient?, builder.build())
-            result.setResultCallback {
-                (ResultCallback<LocationSettingsResult> { result ->
+            result.setResultCallback(
+            object : ResultCallback<LocationSettingsResult>,
+                com.google.android.gms.common.api.ResultCallback< LocationSettingsResult> {
+                override fun onReceiveResult(result: LocationSettingsResult) {
                     val status = result.status
                     val state = result.locationSettingsStates
                     when (status.statusCode) {
@@ -125,8 +128,38 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
                         }
                         LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
                     }
-                })
-            }
+
+
+                }
+
+                override fun onResult(result: LocationSettingsResult) {
+                    val status = result.status
+                    val state = result.locationSettingsStates
+                    when (status.statusCode) {
+                        LocationSettingsStatusCodes.SUCCESS -> toast("Success")
+                        LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
+                            toast("GPS is not on")
+                            // Location settings are not satisfied. But could be
+                            // fixed by showing the user
+                            // a dialog.
+                            try {
+                                // Show the dialog by calling
+                                // startResolutionForResult(),
+                                // and check the result in onActivityResult().
+                                status.startResolutionForResult(this@MainActivity, 1000)
+
+                            } catch (e: IntentSender.SendIntentException) {
+                                // Ignore the error.
+                                Log.e("SendIntentException", e.message)
+                            }
+
+                        }
+                        LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
+                    }
+
+                }
+
+            })
         }
     }
 
@@ -248,6 +281,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     override fun onResume() {
         super.onResume()
         turnONGps()
@@ -269,6 +303,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
         } else {
             textView.append(isBetterLocation(currentLocation as Location, location).toString())
+            sendData()
         }
 
         currentLocation = location
@@ -332,7 +367,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
     }
 
     fun sendData() {
-        textView.text = "Everything is cleared\n"
+        //textView.text = "Everything is cleared\n"
         val hashMap: HashMap<String, Any> = hashMapOf()
 
         hashMap.put("id", 123456789012)
