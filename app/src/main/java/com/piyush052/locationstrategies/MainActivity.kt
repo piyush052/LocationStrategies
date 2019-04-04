@@ -29,6 +29,12 @@ import com.google.android.gms.location.*
 import com.google.android.gms.location.LocationSettingsStatusCodes
 import com.google.android.gms.location.LocationSettingsStates
 import com.google.android.gms.location.places.ui.PlaceAutocomplete.getStatus
+import com.google.gson.Gson
+import com.piyush052.locationstrategies.network.NetworkService
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import java.io.IOException
 
 
 class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
@@ -42,20 +48,17 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
     }
 
     override fun onConnectionSuspended(p0: Int) {
-        toast("Suspended");
+        toast("Suspended")
     }
 
     private lateinit var context: Context
     var googleApiClient: Any? = null
     private var currentLocation: Location? = null
-
     private val _PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 101
     private val TWO_MINUTES: Long = 1000 * 60 * 2
-
     private val PROVIDER = LocationManager.GPS_PROVIDER
-
-
     var locationManager: LocationManager? = null
+
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,8 +68,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         checkPermission()
-        clear.setOnClickListener { textView.text = "Everything is cleared\n" }
-
+        clear.setOnClickListener { sendData() }
+        sendData()
 
     }
 
@@ -95,7 +98,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
             builder.setAlwaysShow(true) // this is the key ingredient
             // **************************
 
-            val result = LocationServices.SettingsApi.checkLocationSettings(googleApiClient as GoogleApiClient?, builder.build())
+            val result =
+                LocationServices.SettingsApi.checkLocationSettings(googleApiClient as GoogleApiClient?, builder.build())
             result.setResultCallback {
                 (ResultCallback<LocationSettingsResult> { result ->
                     val status = result.status
@@ -115,7 +119,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
                             } catch (e: IntentSender.SendIntentException) {
                                 // Ignore the error.
-                                Log.e("IntentSender.SendIntentException",e.message)
+                                Log.e("SendIntentException", e.message)
                             }
 
                         }
@@ -275,7 +279,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
      * @param location The new Location that you want to evaluate
      * @param currentBestLocation The current Location fix, to which you want to compare the new one
      */
-    fun isBetterLocation(location: Location, currentBestLocation: Location?): Boolean {
+    private fun isBetterLocation(location: Location, currentBestLocation: Location?): Boolean {
         if (currentBestLocation == null) {
             // A new location is always better than no location
             return true
@@ -325,5 +329,44 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
                 //Write your code if there's no result
             }
         }
+    }
+
+    fun sendData() {
+        textView.text = "Everything is cleared\n"
+        val hashMap: HashMap<String, Any> = hashMapOf()
+
+        hashMap.put("id", 123456789012)
+        hashMap.put("timestamp", 123456789012)
+        hashMap.put("lat", 34.566)
+        hashMap.put("lon", 132.44444)
+        hashMap.put("speed", 40)
+        hashMap.put("bearing", 6.0)
+        hashMap.put("altitude", 200)
+        hashMap.put("accuracy", 1)
+        hashMap.put("batt", 89)
+
+        val s =
+            "http://api.traxsmart.in:5055?id=8884144794&timestamp=1554363378&lat=13.1986348037&lon=77.7065928&bearing=272." +
+                    "679170984&speed=0&alarm=sos&accuracy=100&rpm=2472&fuel=76&driverUniqueId=123456"
+
+        NetworkService().getInstance().sendDataToServer(s/*123456789012,123456789012,34.566,132.44444,40.0,8*/)
+            .enqueue(object : Callback, retrofit2.Callback<Any> {
+                override fun onFailure(call: Call, e: IOException) {
+                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+                }
+
+                override fun onFailure(call: retrofit2.Call<Any>, t: Throwable) {
+                    Log.e("onFailure", t.message)
+                }
+
+                override fun onResponse(call: retrofit2.Call<Any>, response: retrofit2.Response<Any>) {
+                    Log.e("onResponse", Gson().toJson(response))
+                }
+
+            })
     }
 }

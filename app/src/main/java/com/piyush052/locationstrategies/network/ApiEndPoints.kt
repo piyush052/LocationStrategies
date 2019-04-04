@@ -1,11 +1,18 @@
 package com.piyush052.locationstrategies.network
 
-import okhttp3.Call
-import retrofit2.http.GET
-import retrofit2.http.Query
+import retrofit2.Call
+import retrofit2.http.*
 
 interface ApiEndPoints {
+    @GET
+    fun sendDataToServer(
+        @Url id:String
+//        @Query("timestamp") timestamp:Long,
+//        @Query("lat") lat:Double,
+//        @Query("lon") lon:Double,
+//        @Query("bearing") bearing:Double,
+//        @Query("accuracy") accuracy:Int
 
-    @GET("/2.0/?method=artist.search")
-    fun searchArtist(@Query("artist") artist: String): Call
+
+    ): Call<Any>
 }
