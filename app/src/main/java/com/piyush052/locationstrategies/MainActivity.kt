@@ -31,6 +31,7 @@ import com.google.android.gms.location.LocationSettingsStates
 import com.google.android.gms.location.places.ui.PlaceAutocomplete.getStatus
 import com.google.gson.Gson
 import com.piyush052.locationstrategies.network.NetworkService
+import com.piyush052.locationstrategies.service.ForegroundService
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Response
@@ -75,10 +76,18 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
     @SuppressLint("MissingPermission")
     fun startListeningLocation() {
-        locationManager!!.requestLocationUpdates(PROVIDER, 0, 0f, locationListener)
-        val location = getLocation(PROVIDER)
-        if (location is Location)
-            makeUseOfNewLocation(location)
+
+        // run the service
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(Intent(this@MainActivity, ForegroundService::class.java))
+        }else{
+            startService(Intent(this@MainActivity, ForegroundService::class.java))
+
+        }
+//        locationManager!!.requestLocationUpdates(PROVIDER, 0, 0f, locationListener)
+//        val location = getLocation(PROVIDER)
+//        if (location is Location)
+//            makeUseOfNewLocation(location)
     }
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     fun turnONGps() {

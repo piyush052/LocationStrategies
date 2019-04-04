@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-feature android:name="android.hardware.location.network"/>
     <uses-feature android:name="android.hardware.location.gps"/>
 
@@ -24,6 +25,8 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <service android:name=".service.ForegroundService" />
     </application>
 
 </manifest>
