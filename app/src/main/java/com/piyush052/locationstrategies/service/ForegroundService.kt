@@ -2,7 +2,6 @@ package com.piyush052.locationstrategies.service
 
 import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -12,23 +11,13 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import com.piyush052.locationstrategies.MainActivity
 import android.app.NotificationManager
 import android.app.NotificationChannel
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.util.Log
-import com.google.gson.Gson
-import com.piyush052.locationstrategies.Position
+import com.piyush052.locationstrategies.java.Position
 import com.piyush052.locationstrategies.java.CallAsync
-import com.piyush052.locationstrategies.network.NetworkService
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.HttpUrl
-import okhttp3.Response
-import retrofit2.http.Url
-import java.io.IOException
-import java.net.URL
 
 
 class ForegroundService : Service(), LocationListener {
@@ -127,7 +116,11 @@ class ForegroundService : Service(), LocationListener {
 
         count++
 
-        val position = Position("123456789012", location, getBatteryLevel(applicationContext))
+        val position = Position(
+            "123456789012",
+            location,
+            getBatteryLevel(applicationContext)
+        )
 
 
         if(count%10==0){

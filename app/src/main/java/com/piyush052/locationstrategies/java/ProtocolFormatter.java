@@ -1,7 +1,6 @@
 package com.piyush052.locationstrategies.java;
 
 import android.net.Uri;
-import com.piyush052.locationstrategies.Position;
 
 public class ProtocolFormatter {
 

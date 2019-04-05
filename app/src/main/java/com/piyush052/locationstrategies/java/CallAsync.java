@@ -4,7 +4,6 @@ import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
 import com.piyush052.locationstrategies.Contants;
-import com.piyush052.locationstrategies.Position;
 import com.piyush052.locationstrategies.R;
 
 public class CallAsync {

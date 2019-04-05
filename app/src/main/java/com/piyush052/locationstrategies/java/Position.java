@@ -1,4 +1,4 @@
-package com.piyush052.locationstrategies;
+package com.piyush052.locationstrategies.java;
 
 import android.location.Location;
 import android.location.LocationManager;
