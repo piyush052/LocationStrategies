@@ -1,12 +1,15 @@
 package com.piyush052.locationstrategies.network
 
 import retrofit2.Call
-import retrofit2.http.*
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.QueryMap
+import retrofit2.http.Url
 
 interface ApiEndPoints {
-    @GET
+    @POST("./")
     fun sendDataToServer(
-        @Url id:String
+        @QueryMap fullUrl:HashMap<String,Any>
 //        @Query("timestamp") timestamp:Long,
 //        @Query("lat") lat:Double,
 //        @Query("lon") lon:Double,
