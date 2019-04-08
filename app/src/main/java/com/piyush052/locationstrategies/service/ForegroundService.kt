@@ -26,7 +26,9 @@ class ForegroundService : Service(), LocationListener {
     private val PROVIDER = LocationManager.GPS_PROVIDER
     val CHANNEL_DEFAULT_IMPORTANCE = "1111"
     private val ONGOING_NOTIFICATION_ID = 1111
-    var count = 1;
+    var count = 1
+    val minTime:Long = 150000
+    val minDistace : Float= 100f
 
 
     override fun onLocationChanged(location: Location?) {
@@ -86,9 +88,10 @@ class ForegroundService : Service(), LocationListener {
 
     @SuppressLint("MissingPermission")
     fun startListeningLocation() {
+
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        locationManager!!.requestLocationUpdates(PROVIDER, 15000, 0f, this)
-        //locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 15000, 0f, this)
+        locationManager!!.requestLocationUpdates(PROVIDER, minTime, minDistace, this)
+        locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime, minDistace, this)
         val location = getLocation(PROVIDER)
         if (location is Location) {
             Log.e("Last Location","")
@@ -129,45 +132,6 @@ class ForegroundService : Service(), LocationListener {
         CallAsync().callAsyncAPI(this, position,null)
 
 
-//        //textView.text = "Everything is cleared\n"
-//        val hashMap: HashMap<String, Any> = hashMapOf()
-//
-//        hashMap.put("id", 123456789012)
-//        hashMap.put("timestamp", 123456789012)
-//        hashMap.put("lat", 34.566)
-//        hashMap.put("lon", 132.44444)
-//        hashMap.put("speed", 40)
-//        hashMap.put("bearing", 6.0)
-//        hashMap.put("altitude", 200)
-//        hashMap.put("accuracy", 1)
-//        hashMap.put("batt", 89)
-//
-//        val s =
-//            "http://api.traxsmart.in:5055?id=8884144794&timestamp=1554363378&lat=13.1986348037&lon=77.7065928&bearing=272." +
-//                    "679170984&speed=0&alarm=sos&accuracy=100&rpm=2472&fuel=76&driverUniqueId=123456"
-//
-//        val x: HttpUrl? = HttpUrl.parse(s)
-//
-//        x?.let {
-//            NetworkService().getInstance().sendDataToServer(hashMap /*123456789012,123456789012,34.566,132.44444,40.0,8*/)
-//                .enqueue(object : Callback, retrofit2.Callback<Any> {
-//                    override fun onFailure(call: Call, e: IOException) {
-//                    }
-//
-//                    override fun onResponse(call: Call, response: Response) {
-//                    }
-//
-//                    override fun onFailure(call: retrofit2.Call<Any>, t: Throwable) {
-//                        Log.e("onFailure", t.message)
-//                    }
-//
-//                    override fun onResponse(call: retrofit2.Call<Any>, response: retrofit2.Response<Any>) {
-//                       // Log.e("--", s)
-//                    }
-//                })
-//        }
-
-
     }
 
     @SuppressLint("MissingPermission")
@@ -178,5 +142,55 @@ class ForegroundService : Service(), LocationListener {
             }
         }
         return null
+    }
+
+
+    private val TWO_MINUTES: Long = 1000 * 60 * 2
+    /** Determines whether one Location reading is better than the current Location fix
+     * @param location The new Location that you want to evaluate
+     * @param currentBestLocation The current Location fix, to which you want to compare the new one
+     */
+    private fun isBetterLocation(location: Location, currentBestLocation: Location?): Boolean {
+        if (currentBestLocation == null) {
+            // A new location is always better than no location
+            return true
+        }
+
+        // Check whether the new location fix is newer or older
+        val timeDelta: Long = location.time - currentBestLocation.time
+        val isSignificantlyNewer: Boolean = timeDelta > TWO_MINUTES
+        val isSignificantlyOlder: Boolean = timeDelta < -TWO_MINUTES
+
+        when {
+            // If it's been more than two minutes since the current location, use the new location
+            // because the user has likely moved
+            isSignificantlyNewer -> return true
+            // If the new location is more than two minutes older, it must be worse
+            isSignificantlyOlder -> return false
+        }
+
+        // Check whether the new location fix is more or less accurate
+        val isNewer: Boolean = timeDelta > 0L
+        val accuracyDelta: Float = location.accuracy - currentBestLocation.accuracy
+        val isLessAccurate: Boolean = accuracyDelta > 0f
+        val isMoreAccurate: Boolean = accuracyDelta < 0f
+        val isSignificantlyLessAccurate: Boolean = accuracyDelta > 200f
+
+        // Check if the old and new location are from the same provider
+        val isFromSameProvider: Boolean = location.provider == currentBestLocation.provider
+
+        // Determine location quality using a combination of timeliness and accuracy
+        return when {
+            isMoreAccurate -> true
+            isNewer && !isLessAccurate -> true
+            isNewer && !isSignificantlyLessAccurate && isFromSameProvider -> true
+            else -> false
+        }
+    }
+
+
+    override fun onDestroy() {
+        super.onDestroy()
+        locationManager!!.removeUpdates(this)
     }
 }

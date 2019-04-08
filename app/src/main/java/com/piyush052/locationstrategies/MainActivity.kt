@@ -20,6 +20,7 @@ import android.content.IntentSender
 import android.service.carrier.CarrierMessagingService.ResultCallback
 import android.content.BroadcastReceiver.PendingResult
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -54,10 +55,8 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
     private lateinit var context: Context
     var googleApiClient: Any? = null
-    private var currentLocation: Location? = null
     private val _PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 101
-    private val TWO_MINUTES: Long = 1000 * 60 * 2
-    private val PROVIDER = LocationManager.GPS_PROVIDER
+
     var locationManager: LocationManager? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,13 +67,20 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         checkPermission()
-        clear.setOnClickListener {  }
+
+//        clear.setOnClickListener {
+//            val url = "http://www.example.com/gizmos"
+//            val i = Intent(Intent.ACTION_VIEW)
+//            i.data = Uri.parse(url)
+//            startActivity(i)
+//        }
 
 
     }
 
     @SuppressLint("MissingPermission")
     fun startListeningLocation() {
+
 
         // run the service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -83,10 +89,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
             startService(Intent(this@MainActivity, ForegroundService::class.java))
 
         }
-//        locationManager!!.requestLocationUpdates(PROVIDER, 0, 0f, locationListener)
-//        val location = getLocation(PROVIDER)
-//        if (location is Location)
-//            makeUseOfNewLocation(location)
+
     }
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     fun turnONGps() {
@@ -236,6 +239,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 
 
         } else {
+            turnONGps()
             startListeningLocation()
         }
 
@@ -246,6 +250,7 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
         when (requestCode) {
             _PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    turnONGps()
                     startListeningLocation()
                 } else {
                     if (!ActivityCompat.shouldShowRequestPermissionRationale(
@@ -263,101 +268,12 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
     }
 
 
-    private val locationListener: LocationListener = object : LocationListener {
-
-        override fun onLocationChanged(location: Location) {
-            // Called when a new location is found by the network location provider.
-            makeUseOfNewLocation(location)
-        }
-
-        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {
-            textView.append("\nonStatusChanged  -- ${provider}, ${status}")
-
-        }
-
-        override fun onProviderEnabled(provider: String) {
-            textView.append("\nonProviderEnabled  -- ${provider}")
-
-        }
-
-        override fun onProviderDisabled(provider: String) {
-            textView.append("\nonProviderDisabled  -- ${provider}")
-            //turnONGps()
 
 
-        }
-
-    }
-
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
-    override fun onResume() {
-        super.onResume()
-        turnONGps()
-
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        locationManager!!.removeUpdates(locationListener)
-    }
-
-    @SuppressLint("SetTextI18n")
-    private fun makeUseOfNewLocation(location: Location) {
-
-        textView.append("\nLocation -- ${location.latitude}, ${location.longitude}  ${location.accuracy}")
-        if (currentLocation == null) {
-            currentLocation = location
-            textView.append(isBetterLocation(location, null).toString())
-
-        } else {
-            textView.append(isBetterLocation(currentLocation as Location, location).toString())
-        }
-
-        currentLocation = location
-    }
 
 
-    /** Determines whether one Location reading is better than the current Location fix
-     * @param location The new Location that you want to evaluate
-     * @param currentBestLocation The current Location fix, to which you want to compare the new one
-     */
-    private fun isBetterLocation(location: Location, currentBestLocation: Location?): Boolean {
-        if (currentBestLocation == null) {
-            // A new location is always better than no location
-            return true
-        }
 
-        // Check whether the new location fix is newer or older
-        val timeDelta: Long = location.time - currentBestLocation.time
-        val isSignificantlyNewer: Boolean = timeDelta > TWO_MINUTES
-        val isSignificantlyOlder: Boolean = timeDelta < -TWO_MINUTES
 
-        when {
-            // If it's been more than two minutes since the current location, use the new location
-            // because the user has likely moved
-            isSignificantlyNewer -> return true
-            // If the new location is more than two minutes older, it must be worse
-            isSignificantlyOlder -> return false
-        }
-
-        // Check whether the new location fix is more or less accurate
-        val isNewer: Boolean = timeDelta > 0L
-        val accuracyDelta: Float = location.accuracy - currentBestLocation.accuracy
-        val isLessAccurate: Boolean = accuracyDelta > 0f
-        val isMoreAccurate: Boolean = accuracyDelta < 0f
-        val isSignificantlyLessAccurate: Boolean = accuracyDelta > 200f
-
-        // Check if the old and new location are from the same provider
-        val isFromSameProvider: Boolean = location.provider == currentBestLocation.provider
-
-        // Determine location quality using a combination of timeliness and accuracy
-        return when {
-            isMoreAccurate -> true
-            isNewer && !isLessAccurate -> true
-            isNewer && !isSignificantlyLessAccurate && isFromSameProvider -> true
-            else -> false
-        }
-    }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
