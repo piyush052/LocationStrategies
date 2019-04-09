@@ -16,23 +16,24 @@ import android.app.NotificationChannel
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.util.Log
+import android.widget.Toast
 import com.piyush052.locationstrategies.java.Position
 import com.piyush052.locationstrategies.java.CallAsync
 
 
 class ForegroundService : Service(), LocationListener {
 
-    var locationManager: LocationManager? = null
+    private var locationManager: LocationManager? = null
     private val PROVIDER = LocationManager.GPS_PROVIDER
-    val CHANNEL_DEFAULT_IMPORTANCE = "1111"
-    private val ONGOING_NOTIFICATION_ID = 1111
-    var count = 1
-    val minTime:Long = 150000
-    val minDistace : Float= 100f
+    private var count = 1
+    private val minTime: Long = 0
+    private val minDistace: Float = 0f
+    private val TWO_MINUTES: Long = 1000 * 60 * 2
+    private var location:Location?= null
 
 
     override fun onLocationChanged(location: Location?) {
-        Log.e("onLocationChanged","")
+        Log.e("onLocationChanged", "")
         if (location != null) {
             makeUseOfNewLocation(location)
         }
@@ -46,6 +47,14 @@ class ForegroundService : Service(), LocationListener {
     }
 
     override fun onProviderDisabled(provider: String?) {
+
+        Toast.makeText(applicationContext,provider,Toast.LENGTH_LONG).show()
+        val position = Position(
+            "123456789012",
+            location,
+            getBatteryLevel(applicationContext)
+        )
+        CallAsync().callAsyncAPI(this, position, "gpsAntennaCut")
     }
 
 
@@ -75,6 +84,7 @@ class ForegroundService : Service(), LocationListener {
         notificationChannel.description = channelId
         notificationChannel.setSound(null, null)
 
+
         notificationManager.createNotificationChannel(notificationChannel)
         val notification = Notification.Builder(this, channelId)
             .setContentTitle(getString(com.piyush052.locationstrategies.R.string.app_name))
@@ -94,7 +104,7 @@ class ForegroundService : Service(), LocationListener {
         locationManager!!.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime, minDistace, this)
         val location = getLocation(PROVIDER)
         if (location is Location) {
-            Log.e("Last Location","")
+            Log.e("Last Location", "")
             makeUseOfNewLocation(location)
         }
     }
@@ -102,10 +112,12 @@ class ForegroundService : Service(), LocationListener {
     private fun makeUseOfNewLocation(location: Location) {
         // check location accuracy
 
+        this.location = location;
+
         sendData(location)
     }
 
-     private fun getBatteryLevel(context: Context): Double {
+    private fun getBatteryLevel(context: Context): Double {
         val batteryIntent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         if (batteryIntent != null) {
             val level = batteryIntent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0)
@@ -126,10 +138,11 @@ class ForegroundService : Service(), LocationListener {
         )
 
 
-        if(count%10==0){
-            CallAsync().callAsyncAPI(this, position,"sos")
-        }else
-        CallAsync().callAsyncAPI(this, position,null)
+        if (count % 10 == 0) {
+            CallAsync().callAsyncAPI(this, position, "sos")
+        } else {
+            CallAsync().callAsyncAPI(this, position, null)
+        }
 
 
     }
@@ -145,7 +158,6 @@ class ForegroundService : Service(), LocationListener {
     }
 
 
-    private val TWO_MINUTES: Long = 1000 * 60 * 2
     /** Determines whether one Location reading is better than the current Location fix
      * @param location The new Location that you want to evaluate
      * @param currentBestLocation The current Location fix, to which you want to compare the new one
