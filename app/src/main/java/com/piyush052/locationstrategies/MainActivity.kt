@@ -24,6 +24,9 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelProviders
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.*
@@ -31,6 +34,7 @@ import com.google.android.gms.location.LocationSettingsStatusCodes
 import com.google.android.gms.location.LocationSettingsStates
 import com.google.android.gms.location.places.ui.PlaceAutocomplete.getStatus
 import com.google.gson.Gson
+import com.piyush052.locationstrategies.models.JsonViewModel
 import com.piyush052.locationstrategies.network.NetworkService
 import com.piyush052.locationstrategies.service.ForegroundService
 import okhttp3.Call
@@ -75,6 +79,15 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
 //            startActivity(i)
 //        }
 
+        val model = ViewModelProviders.of(this).get(JsonViewModel::class.java)
+
+        model.getData().observe(this, object : Observer< String> {
+            override fun onChanged(t: String?) {
+               Log.e("viewModel changed", Gson().toJson(t))
+            }
+
+        })
+
 
     }
 
@@ -85,12 +98,13 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
         // run the service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(Intent(this@MainActivity, ForegroundService::class.java))
-        }else{
+        } else {
             startService(Intent(this@MainActivity, ForegroundService::class.java))
 
         }
 
     }
+
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     fun turnONGps() {
         googleApiClient = null
@@ -113,64 +127,64 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
             val result =
                 LocationServices.SettingsApi.checkLocationSettings(googleApiClient as GoogleApiClient?, builder.build())
             result.setResultCallback(
-            object : ResultCallback<LocationSettingsResult>,
-                com.google.android.gms.common.api.ResultCallback< LocationSettingsResult> {
-                override fun onReceiveResult(result: LocationSettingsResult) {
-                    val status = result.status
-                    val state = result.locationSettingsStates
-                    when (status.statusCode) {
-                        LocationSettingsStatusCodes.SUCCESS -> toast("Success")
-                        LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
-                            toast("GPS is not on")
-                            // Location settings are not satisfied. But could be
-                            // fixed by showing the user
-                            // a dialog.
-                            try {
-                                // Show the dialog by calling
-                                // startResolutionForResult(),
-                                // and check the result in onActivityResult().
-                                status.startResolutionForResult(this@MainActivity, 1000)
+                object : ResultCallback<LocationSettingsResult>,
+                    com.google.android.gms.common.api.ResultCallback<LocationSettingsResult> {
+                    override fun onReceiveResult(result: LocationSettingsResult) {
+                        val status = result.status
+                        val state = result.locationSettingsStates
+                        when (status.statusCode) {
+                            LocationSettingsStatusCodes.SUCCESS -> toast("Success")
+                            LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
+                                toast("GPS is not on")
+                                // Location settings are not satisfied. But could be
+                                // fixed by showing the user
+                                // a dialog.
+                                try {
+                                    // Show the dialog by calling
+                                    // startResolutionForResult(),
+                                    // and check the result in onActivityResult().
+                                    status.startResolutionForResult(this@MainActivity, 1000)
 
-                            } catch (e: IntentSender.SendIntentException) {
-                                // Ignore the error.
-                                Log.e("SendIntentException", e.message)
+                                } catch (e: IntentSender.SendIntentException) {
+                                    // Ignore the error.
+                                    Log.e("SendIntentException", e.message)
+                                }
+
                             }
-
+                            LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
                         }
-                        LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
+
+
                     }
 
+                    override fun onResult(result: LocationSettingsResult) {
+                        val status = result.status
+                        val state = result.locationSettingsStates
+                        when (status.statusCode) {
+                            LocationSettingsStatusCodes.SUCCESS -> toast("Success")
+                            LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
+                                toast("GPS is not on")
+                                // Location settings are not satisfied. But could be
+                                // fixed by showing the user
+                                // a dialog.
+                                try {
+                                    // Show the dialog by calling
+                                    // startResolutionForResult(),
+                                    // and check the result in onActivityResult().
+                                    status.startResolutionForResult(this@MainActivity, 1000)
 
-                }
+                                } catch (e: IntentSender.SendIntentException) {
+                                    // Ignore the error.
+                                    Log.e("SendIntentException", e.message)
+                                }
 
-                override fun onResult(result: LocationSettingsResult) {
-                    val status = result.status
-                    val state = result.locationSettingsStates
-                    when (status.statusCode) {
-                        LocationSettingsStatusCodes.SUCCESS -> toast("Success")
-                        LocationSettingsStatusCodes.RESOLUTION_REQUIRED -> {
-                            toast("GPS is not on")
-                            // Location settings are not satisfied. But could be
-                            // fixed by showing the user
-                            // a dialog.
-                            try {
-                                // Show the dialog by calling
-                                // startResolutionForResult(),
-                                // and check the result in onActivityResult().
-                                status.startResolutionForResult(this@MainActivity, 1000)
-
-                            } catch (e: IntentSender.SendIntentException) {
-                                // Ignore the error.
-                                Log.e("SendIntentException", e.message)
                             }
-
+                            LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
                         }
-                        LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE -> toast("Setting change not allowed")
+
                     }
 
-                }
-
-            })
+                })
         }
     }
 
@@ -266,13 +280,6 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
             }
         }
     }
-
-
-
-
-
-
-
 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

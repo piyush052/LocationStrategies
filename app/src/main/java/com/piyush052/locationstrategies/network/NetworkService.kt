@@ -1,14 +1,20 @@
 package com.piyush052.locationstrategies.network
 
 import android.util.Log
+import com.google.gson.Gson
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import com.piyush052.locationstrategies.BuildConfig
+import com.piyush052.locationstrategies.service.NetworkResponse
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.schedulers.Schedulers
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 class NetworkService {
@@ -46,5 +52,16 @@ class NetworkService {
             .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
             .build()
         return retrofit.create(ApiEndPoints::class.java)
+    }
+
+    fun callLoginApi(request: com.piyush052.locationstrategies.network.Request<String>, networkResponse: NetworkResponse<String>){
+        getInstance().sendDataToServer("https://j1rd28gar0.execute-api.ap-southeast-1.amazonaws.com/dev/organizations/5cd14207ff66d228b60586b4")
+            .subscribeOn(Schedulers.newThread())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(){
+                request.response= Gson().toJson(it);
+                networkResponse.onNetworkResponse(request)
+        Log.e("API res ", Gson().toJson(it))
+        }
     }
 }

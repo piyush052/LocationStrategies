@@ -1,5 +1,6 @@
 package com.piyush052.locationstrategies.network
 
+import io.reactivex.Observable
 import retrofit2.Call
 import retrofit2.http.GET
 import retrofit2.http.POST
@@ -7,9 +8,10 @@ import retrofit2.http.QueryMap
 import retrofit2.http.Url
 
 interface ApiEndPoints {
-    @POST("./")
+    @GET
     fun sendDataToServer(
-        @QueryMap fullUrl:HashMap<String,Any>
+        @Url url : String
+        //@QueryMap fullUrl:HashMap<String,Any>
 //        @Query("timestamp") timestamp:Long,
 //        @Query("lat") lat:Double,
 //        @Query("lon") lon:Double,
@@ -17,5 +19,5 @@ interface ApiEndPoints {
 //        @Query("accuracy") accuracy:Int
 
 
-    ): Call<Any>
+    ): Observable<Any>
 }
