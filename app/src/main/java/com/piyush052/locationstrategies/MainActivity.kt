@@ -36,7 +36,11 @@ import com.google.android.gms.location.places.ui.PlaceAutocomplete.getStatus
 import com.google.gson.Gson
 import com.piyush052.locationstrategies.models.JsonViewModel
 import com.piyush052.locationstrategies.network.NetworkService
+import com.piyush052.locationstrategies.network.Request
 import com.piyush052.locationstrategies.service.ForegroundService
+import com.piyush052.locationstrategies.service.NetworkResponse
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Response
@@ -87,6 +91,21 @@ class MainActivity : AppCompatActivity(), GoogleApiClient.ConnectionCallbacks,
             }
 
         })
+
+
+
+        GlobalScope.launch {
+            NetworkService().callLoginApi(request= Request(), networkResponse = object : NetworkResponse<String> {
+                override fun onNetworkError(request: Request<String>) {
+
+                }
+
+                override fun onNetworkResponse(request: Request<String>) {
+
+                }
+
+            })
+        }
 
 
     }

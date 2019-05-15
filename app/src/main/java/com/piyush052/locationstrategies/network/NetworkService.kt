@@ -54,7 +54,7 @@ class NetworkService {
         return retrofit.create(ApiEndPoints::class.java)
     }
 
-    fun callLoginApi(request: com.piyush052.locationstrategies.network.Request<String>, networkResponse: NetworkResponse<String>){
+     fun callLoginApi(request: com.piyush052.locationstrategies.network.Request<String>, networkResponse: NetworkResponse<String>){
         getInstance().sendDataToServer("https://j1rd28gar0.execute-api.ap-southeast-1.amazonaws.com/dev/organizations/5cd14207ff66d228b60586b4")
             .subscribeOn(Schedulers.newThread())
             .observeOn(AndroidSchedulers.mainThread())
